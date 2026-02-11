@@ -8,7 +8,7 @@ use crate::input::{drain_stdin, get_command_arg, is_piped_input, smart_confirm, 
 use crate::state::{WorktreeInfo, XlaudeState};
 use crate::utils::{prepare_agent_command, sanitize_branch_name};
 
-pub fn handle_open(name: Option<String>) -> Result<()> {
+pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> {
     let mut state = XlaudeState::load()?;
 
     // Check if current path is a worktree when no name is provided
@@ -92,7 +92,8 @@ pub fn handle_open(name: Option<String>) -> Result<()> {
             }
 
             // Launch agent in current directory
-            let (program, args) = prepare_agent_command(&current_dir)?;
+            let (program, mut args) = prepare_agent_command(&current_dir)?;
+            args.extend(agent_args);
             let mut cmd = Command::new(&program);
             cmd.args(&args);
 
@@ -163,7 +164,8 @@ pub fn handle_open(name: Option<String>) -> Result<()> {
     std::env::set_current_dir(&worktree_info.path).context("Failed to change directory")?;
 
     // Resolve global agent command
-    let (program, args) = prepare_agent_command(&worktree_info.path)?;
+    let (program, mut args) = prepare_agent_command(&worktree_info.path)?;
+    args.extend(agent_args);
     let mut cmd = Command::new(&program);
     cmd.args(&args);
 

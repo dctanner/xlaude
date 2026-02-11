@@ -34,6 +34,9 @@ enum Commands {
         /// Automatically open the worktree after creation
         #[arg(short = 'y')]
         yes: bool,
+        /// Extra arguments passed to the agent command
+        #[arg(last = true)]
+        agent_args: Vec<String>,
     },
     /// Checkout a branch or pull request into a worktree
     Checkout {
@@ -44,6 +47,9 @@ enum Commands {
     Open {
         /// Name of the worktree to open (interactive selection if not provided)
         name: Option<String>,
+        /// Extra arguments passed to the agent command
+        #[arg(last = true)]
+        agent_args: Vec<String>,
     },
     /// Delete a worktree and clean up
     Delete {
@@ -105,9 +111,13 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Create { name, yes } => handle_create(name, yes),
+        Commands::Create {
+            name,
+            yes,
+            agent_args,
+        } => handle_create(name, yes, agent_args),
         Commands::Checkout { target } => handle_checkout(target),
-        Commands::Open { name } => handle_open(name),
+        Commands::Open { name, agent_args } => handle_open(name, agent_args),
         Commands::Delete { name } => handle_delete(name),
         Commands::Add { name } => handle_add(name),
         Commands::Rename { old_name, new_name } => handle_rename(old_name, new_name),

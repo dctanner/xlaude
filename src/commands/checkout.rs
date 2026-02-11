@@ -47,7 +47,7 @@ pub fn handle_checkout(target: Option<String>) -> Result<()> {
         )?;
 
         if should_open {
-            handle_open(Some(existing.name.clone()))?;
+            handle_open(Some(existing.name.clone()), vec![])?;
             return Ok(());
         }
 

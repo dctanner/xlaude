@@ -12,12 +12,17 @@ use crate::input::{get_command_arg, smart_confirm};
 use crate::state::{WorktreeInfo, XlaudeState};
 use crate::utils::{generate_random_name, sanitize_branch_name};
 
-pub fn handle_create(name: Option<String>, yes: bool) -> Result<()> {
-    handle_create_in_dir(name, None, yes)
+pub fn handle_create(name: Option<String>, yes: bool, agent_args: Vec<String>) -> Result<()> {
+    handle_create_in_dir(name, None, yes, agent_args)
 }
 
-pub fn handle_create_in_dir(name: Option<String>, repo_path: Option<PathBuf>, yes: bool) -> Result<()> {
-    handle_create_in_dir_quiet(name, repo_path, false, yes)?;
+pub fn handle_create_in_dir(
+    name: Option<String>,
+    repo_path: Option<PathBuf>,
+    yes: bool,
+    agent_args: Vec<String>,
+) -> Result<()> {
+    handle_create_in_dir_quiet(name, repo_path, false, yes, agent_args)?;
     Ok(())
 }
 
@@ -27,6 +32,7 @@ pub fn handle_create_in_dir_quiet(
     repo_path: Option<PathBuf>,
     quiet: bool,
     yes: bool,
+    agent_args: Vec<String>,
 ) -> Result<String> {
     // Helper to execute git in the right directory using git -C
     let exec_git = |args: &[&str]| -> Result<String> {
@@ -284,7 +290,7 @@ pub fn handle_create_in_dir_quiet(
         };
 
         if should_open {
-            handle_open(Some(worktree_name.clone()))?;
+            handle_open(Some(worktree_name.clone()), agent_args)?;
         } else if std::env::var("XLAUDE_NON_INTERACTIVE").is_err() {
             println!(
                 "  {} To open it later, run: {} {}",
