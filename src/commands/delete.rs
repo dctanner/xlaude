@@ -43,7 +43,11 @@ impl DeletionConfig {
     }
 }
 
-pub fn handle_delete(name: Option<String>) -> Result<()> {
+pub fn handle_delete(name: Option<String>, all: bool) -> Result<()> {
+    if all {
+        return handle_delete_all();
+    }
+
     let mut state = XlaudeState::load()?;
 
     // Get name from CLI args or pipe
@@ -91,6 +95,99 @@ pub fn handle_delete(name: Option<String>) -> Result<()> {
         "{} Worktree '{}' deleted successfully",
         "✅".green(),
         worktree_info.name.cyan()
+    );
+    Ok(())
+}
+
+fn handle_delete_all() -> Result<()> {
+    let mut state = XlaudeState::load()?;
+
+    if state.worktrees.is_empty() {
+        println!("{} No worktrees to delete", "ℹ️ ".blue());
+        return Ok(());
+    }
+
+    // Collect and display all worktrees
+    let entries: Vec<(String, WorktreeInfo)> = state
+        .worktrees
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+
+    println!(
+        "{} The following {} worktrees will be deleted:",
+        "⚠️ ".yellow(),
+        entries.len()
+    );
+    for (_, info) in &entries {
+        println!("  - {} ({})", info.name.cyan(), info.path.display());
+    }
+    println!();
+
+    if !smart_confirm(
+        &format!(
+            "Delete all {} worktrees? This cannot be undone.",
+            entries.len()
+        ),
+        false,
+    )? {
+        println!("{} Cancelled", "❌".red());
+        return Ok(());
+    }
+
+    let mut deleted_keys = Vec::new();
+
+    for (key, worktree_info) in &entries {
+        println!();
+        println!(
+            "{} Deleting worktree '{}'...",
+            "🗑️ ".yellow(),
+            worktree_info.name.cyan()
+        );
+
+        let config = match DeletionConfig::from_env(worktree_info) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!(
+                    "{} Failed to check '{}': {}",
+                    "❌".red(),
+                    worktree_info.name,
+                    e
+                );
+                continue;
+            }
+        };
+
+        if let Err(e) = perform_deletion(worktree_info, &config) {
+            eprintln!(
+                "{} Failed to delete '{}': {}",
+                "❌".red(),
+                worktree_info.name,
+                e
+            );
+            continue;
+        }
+
+        deleted_keys.push(key.clone());
+        println!(
+            "{} Worktree '{}' deleted successfully",
+            "✅".green(),
+            worktree_info.name.cyan()
+        );
+    }
+
+    // Remove all successfully deleted entries from state
+    for key in &deleted_keys {
+        state.worktrees.remove(key);
+    }
+    state.save()?;
+
+    println!();
+    println!(
+        "{} Deleted {}/{} worktrees",
+        "✅".green(),
+        deleted_keys.len(),
+        entries.len()
     );
     Ok(())
 }

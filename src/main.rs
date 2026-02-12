@@ -55,6 +55,9 @@ enum Commands {
     Delete {
         /// Name of the worktree to delete (current if not provided)
         name: Option<String>,
+        /// Delete all managed worktrees
+        #[arg(long)]
+        all: bool,
     },
     /// Add current worktree to xlaude management
     Add {
@@ -118,7 +121,7 @@ fn main() -> Result<()> {
         } => handle_create(name, yes, agent_args),
         Commands::Checkout { target } => handle_checkout(target),
         Commands::Open { name, agent_args } => handle_open(name, agent_args),
-        Commands::Delete { name } => handle_delete(name),
+        Commands::Delete { name, all } => handle_delete(name, all),
         Commands::Add { name } => handle_add(name),
         Commands::Rename { old_name, new_name } => handle_rename(old_name, new_name),
         Commands::List { json } => handle_list(json),
