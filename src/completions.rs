@@ -42,6 +42,14 @@ _xlaude() {{
 
     # Complete subcommand arguments
     case "${{words[1]}}" in
+        create)
+            if [[ "$prev" == "--from" ]]; then
+                local worktrees=$(xlaude complete-worktrees 2>/dev/null)
+                COMPREPLY=($(compgen -W "$worktrees" -- "$cur"))
+            elif [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "--from -y" -- "$cur"))
+            fi
+            ;;
         open|dir|delete)
             if [[ $cword -eq 2 ]]; then
                 # Get worktree names for completion
@@ -107,7 +115,16 @@ _xlaude() {{
                 _message "new name"
             fi
             ;;
-        create|add)
+        create)
+            # Support --from with worktree completion, and positional name
+            local -a create_opts
+            create_opts=(
+                '--from[Create from an existing worktree or branch]:source:_xlaude_worktrees'
+                '-y[Automatically open the worktree after creation]'
+            )
+            _arguments -s $create_opts '1:worktree name:'
+            ;;
+        add)
             if (( CURRENT == 3 )); then
                 _message "worktree name"
             fi
@@ -201,6 +218,9 @@ end
 # Worktree completions for commands
 complete -c xlaude -n "__fish_seen_subcommand_from open dir delete" -a "(__xlaude_worktrees)"
 complete -c xlaude -n "__fish_seen_subcommand_from rename" -n "not __fish_seen_argument_from (__xlaude_worktrees_simple)" -a "(__xlaude_worktrees)"
+
+# --from flag for create command
+complete -c xlaude -n "__fish_seen_subcommand_from create" -l from -d "Create from an existing worktree or branch" -r -a "(__xlaude_worktrees)"
 
 # Shell completions for completions command
 complete -c xlaude -n "__fish_seen_subcommand_from completions" -a "bash zsh fish"
