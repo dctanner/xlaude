@@ -113,7 +113,12 @@ _pigs() {{
         return
     fi
 
-    # Subcommand argument completion
+    # Shift words so subcommand becomes words[1] and _arguments works correctly
+    local curcontext="${{curcontext}}"
+    local -a subcmd_words
+    subcmd_words=("${{words[2,-1]}}")
+    local subcmd_current=$((CURRENT - 1))
+
     case "${{words[2]}}" in
         open|dir|delete)
             if (( CURRENT == 3 )); then
@@ -128,6 +133,8 @@ _pigs() {{
             fi
             ;;
         linear)
+            words=("${{subcmd_words[@]}}")
+            CURRENT=$subcmd_current
             local -a linear_opts
             linear_opts=(
                 '--from[Create from an existing worktree or branch]:source:_pigs_from_targets'
@@ -136,6 +143,8 @@ _pigs() {{
             _arguments -s $linear_opts '1:Linear issue:_pigs_linear_issues'
             ;;
         create)
+            words=("${{subcmd_words[@]}}")
+            CURRENT=$subcmd_current
             local -a create_opts
             create_opts=(
                 '--from[Create from an existing worktree or branch]:source:_pigs_from_targets'
