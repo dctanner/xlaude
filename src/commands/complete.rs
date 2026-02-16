@@ -2,11 +2,11 @@ use anyhow::Result;
 use std::path::Path;
 
 use crate::claude::get_claude_sessions;
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 
 pub fn handle_complete_worktrees(format: &str) -> Result<()> {
     // Silently load state, return empty on any error
-    let state = match XlaudeState::load() {
+    let state = match PigsState::load() {
         Ok(s) => s,
         Err(_) => return Ok(()), // Silent failure for completions
     };

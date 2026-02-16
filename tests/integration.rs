@@ -25,7 +25,7 @@ impl TestContext {
             .to_string_lossy()
             .to_string();
         let repo_dir = temp_dir.path().join(repo_name);
-        let config_dir = temp_dir.path().join(".config/xlaude");
+        let config_dir = temp_dir.path().join(".config/pigs");
 
         // Initialize test git repo
         Self::init_test_repo(&repo_dir);
@@ -94,30 +94,30 @@ impl TestContext {
             .unwrap();
     }
 
-    fn xlaude(&self, args: &[&str]) -> Command {
-        let mut cmd = cargo_bin_cmd!("xlaude");
+    fn pigs(&self, args: &[&str]) -> Command {
+        let mut cmd = cargo_bin_cmd!("pigs");
         cmd.current_dir(&self.repo_dir)
             .env("HOME", self.temp_dir.path())
-            .env("XLAUDE_CONFIG_DIR", &self.config_dir)
+            .env("PIGS_CONFIG_DIR", &self.config_dir)
             // Run in test mode to avoid auto-open prompts
-            .env("XLAUDE_TEST_MODE", "1")
+            .env("PIGS_TEST_MODE", "1")
             // Disable color output for consistent snapshots
             .env("NO_COLOR", "1")
             // Enable non-interactive mode for testing
-            .env("XLAUDE_NON_INTERACTIVE", "1");
+            .env("PIGS_NON_INTERACTIVE", "1");
 
         cmd.args(args);
         cmd
     }
 
-    fn xlaude_in_dir(&self, dir: &Path, args: &[&str]) -> Command {
-        let mut cmd = cargo_bin_cmd!("xlaude");
+    fn pigs_in_dir(&self, dir: &Path, args: &[&str]) -> Command {
+        let mut cmd = cargo_bin_cmd!("pigs");
         cmd.current_dir(dir)
             .env("HOME", self.temp_dir.path())
-            .env("XLAUDE_CONFIG_DIR", &self.config_dir)
-            .env("XLAUDE_TEST_MODE", "1")
+            .env("PIGS_CONFIG_DIR", &self.config_dir)
+            .env("PIGS_TEST_MODE", "1")
             .env("NO_COLOR", "1")
-            .env("XLAUDE_NON_INTERACTIVE", "1");
+            .env("PIGS_NON_INTERACTIVE", "1");
 
         cmd.args(args);
         cmd
@@ -185,7 +185,7 @@ fn test_create_with_name() {
     let ctx = TestContext::new("test-repo");
 
     // Execute command
-    let output = ctx.xlaude(&["create", "feature-x"]).assert().success();
+    let output = ctx.pigs(&["create", "feature-x"]).assert().success();
 
     // Snapshot test output with path redaction
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -219,8 +219,8 @@ fn test_create_random_name() {
 
     // Set fixed random seed for reproducibility
     let output = ctx
-        .xlaude(&["create"])
-        .env("XLAUDE_TEST_SEED", "42")
+        .pigs(&["create"])
+        .env("PIGS_TEST_SEED", "42")
         .assert()
         .success();
 
@@ -242,7 +242,7 @@ fn test_create_on_wrong_branch() {
         .output()
         .unwrap();
 
-    let output = ctx.xlaude(&["create", "test"]).assert().failure();
+    let output = ctx.pigs(&["create", "test"]).assert().failure();
 
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     let redacted = ctx.redact_paths(&stderr);
@@ -259,7 +259,7 @@ fn test_checkout_branch_creates_worktree() {
     ctx.git(&["show-ref", "--verify", "refs/heads/feature-checkout"]);
 
     let output = ctx
-        .xlaude(&["checkout", "feature-checkout"])
+        .pigs(&["checkout", "feature-checkout"])
         .assert()
         .success();
 
@@ -288,12 +288,12 @@ fn test_checkout_branch_creates_worktree() {
 fn test_checkout_existing_worktree_prompts_open() {
     let ctx = TestContext::new("test-repo");
 
-    ctx.xlaude(&["create", "checkout-existing"])
+    ctx.pigs(&["create", "checkout-existing"])
         .assert()
         .success();
 
     let assert = ctx
-        .xlaude(&["checkout", "checkout-existing"])
+        .pigs(&["checkout", "checkout-existing"])
         .assert()
         .failure();
 
@@ -350,7 +350,7 @@ fn test_checkout_pull_request_creates_worktree() {
 
     ctx.git(&["checkout", "main"]);
 
-    let output = ctx.xlaude(&["checkout", "123"]).assert().success();
+    let output = ctx.pigs(&["checkout", "123"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     let redacted = ctx.redact_paths(&stdout);
@@ -379,7 +379,7 @@ fn test_checkout_pull_request_creates_worktree() {
 fn test_list_empty() {
     let ctx = TestContext::new("test-repo");
 
-    let output = ctx.xlaude(&["list"]).assert().success();
+    let output = ctx.pigs(&["list"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     let redacted = ctx.redact_paths(&stdout);
@@ -391,10 +391,10 @@ fn test_list_with_worktrees() {
     let ctx = TestContext::new("test-repo");
 
     // Create a few worktrees
-    ctx.xlaude(&["create", "feature-a"]).assert().success();
-    ctx.xlaude(&["create", "feature-b"]).assert().success();
+    ctx.pigs(&["create", "feature-a"]).assert().success();
+    ctx.pigs(&["create", "feature-b"]).assert().success();
 
-    let output = ctx.xlaude(&["list"]).assert().success();
+    let output = ctx.pigs(&["list"]).assert().success();
 
     // Manually redact timestamps and paths in output for consistent snapshots
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -408,10 +408,10 @@ fn test_delete_clean_worktree() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree
-    ctx.xlaude(&["create", "to-delete"]).assert().success();
+    ctx.pigs(&["create", "to-delete"]).assert().success();
 
     // Delete worktree (in non-interactive mode, clean worktree will be deleted automatically)
-    let output = ctx.xlaude(&["delete", "to-delete"]).assert().success();
+    let output = ctx.pigs(&["delete", "to-delete"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     let redacted = ctx.redact_paths(&stdout);
@@ -430,14 +430,14 @@ fn test_delete_with_changes() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree
-    ctx.xlaude(&["create", "with-changes"]).assert().success();
+    ctx.pigs(&["create", "with-changes"]).assert().success();
 
     // Create uncommitted changes in worktree
     let worktree_path = ctx.temp_dir.path().join("test-repo-with-changes");
     fs::write(worktree_path.join("new-file.txt"), "content").unwrap();
 
     // Try to delete, in non-interactive mode it will be cancelled automatically
-    let output = ctx.xlaude(&["delete", "with-changes"]).assert().success();
+    let output = ctx.pigs(&["delete", "with-changes"]).assert().success();
 
     // Check that output mentions uncommitted changes and cancellation
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -453,14 +453,14 @@ fn test_delete_current_worktree() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree
-    ctx.xlaude(&["create", "current"]).assert().success();
+    ctx.pigs(&["create", "current"]).assert().success();
 
     // Switch to the worktree directory
     let worktree_path = ctx.temp_dir.path().join("test-repo-current");
 
     // Delete from within the worktree (no name specified)
     let output = ctx
-        .xlaude_in_dir(&worktree_path, &["delete"])
+        .pigs_in_dir(&worktree_path, &["delete"])
         .assert()
         .success();
 
@@ -491,7 +491,7 @@ fn test_add_existing_worktree() {
     let manual_worktree = ctx.temp_dir.path().join("test-repo-manual");
 
     let output = ctx
-        .xlaude_in_dir(&manual_worktree, &["add", "manual"])
+        .pigs_in_dir(&manual_worktree, &["add", "manual"])
         .assert()
         .success();
 
@@ -528,12 +528,12 @@ fn test_add_duplicate_path_is_rejected() {
 
     let manual_worktree = ctx.temp_dir.path().join("test-repo-dup");
 
-    ctx.xlaude_in_dir(&manual_worktree, &["add", "primary"])
+    ctx.pigs_in_dir(&manual_worktree, &["add", "primary"])
         .assert()
         .success();
 
     let assert = ctx
-        .xlaude_in_dir(&manual_worktree, &["add", "secondary"])
+        .pigs_in_dir(&manual_worktree, &["add", "secondary"])
         .assert()
         .failure();
     let stderr = String::from_utf8_lossy(&assert.get_output().stderr);
@@ -559,7 +559,7 @@ fn test_add_without_name() {
 
     // Add without specifying name (should use branch name)
     let output = ctx
-        .xlaude_in_dir(&auto_worktree, &["add"])
+        .pigs_in_dir(&auto_worktree, &["add"])
         .assert()
         .success();
 
@@ -580,11 +580,11 @@ fn test_clean_invalid_worktrees() {
     let ctx = TestContext::new("test-repo");
 
     // Create a valid worktree
-    ctx.xlaude(&["create", "valid"]).assert().success();
+    ctx.pigs(&["create", "valid"]).assert().success();
 
     // Manually corrupt state file by adding invalid worktree
     let state = ctx.read_state();
-    // Convert to proper structure for xlaude state format
+    // Convert to proper structure for pigs state format
     let worktrees_obj = state["worktrees"].as_object().cloned().unwrap_or_default();
     let mut new_worktrees = serde_json::Map::new();
 
@@ -610,7 +610,7 @@ fn test_clean_invalid_worktrees() {
     ctx.write_state(&json!(new_state));
 
     // Run clean
-    let output = ctx.xlaude(&["clean"]).assert().success();
+    let output = ctx.pigs(&["clean"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     let redacted = ctx.redact_paths(&stdout);
@@ -629,11 +629,11 @@ fn test_clean_with_no_invalid() {
     let ctx = TestContext::new("test-repo");
 
     // Create valid worktrees
-    ctx.xlaude(&["create", "valid1"]).assert().success();
-    ctx.xlaude(&["create", "valid2"]).assert().success();
+    ctx.pigs(&["create", "valid1"]).assert().success();
+    ctx.pigs(&["create", "valid2"]).assert().success();
 
     // Run clean (should find no invalid worktrees)
-    let output = ctx.xlaude(&["clean"]).assert().success();
+    let output = ctx.pigs(&["clean"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
@@ -647,10 +647,10 @@ fn test_open_specific_worktree() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree
-    ctx.xlaude(&["create", "to-open"]).assert().success();
+    ctx.pigs(&["create", "to-open"]).assert().success();
 
     // Mock claude command to verify it would be called
-    let output = ctx.xlaude(&["open", "to-open"]).assert().success();
+    let output = ctx.pigs(&["open", "to-open"]).assert().success();
 
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(stdout.contains("Opening worktree"));
@@ -660,7 +660,7 @@ fn test_open_specific_worktree() {
 fn test_open_nonexistent_worktree() {
     let ctx = TestContext::new("test-repo");
 
-    let output = ctx.xlaude(&["open", "nonexistent"]).assert().failure();
+    let output = ctx.pigs(&["open", "nonexistent"]).assert().failure();
 
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(stderr.contains("not found") || stderr.contains("No worktree"));
@@ -694,14 +694,14 @@ fn test_v02_to_v03_migration() {
     // Write old format state
     ctx.write_state(&old_state);
 
-    // Run any xlaude command that loads state (list is simplest)
-    let output = ctx.xlaude(&["list"]).assert().success();
+    // Run any pigs command that loads state (list is simplest)
+    let output = ctx.pigs(&["list"]).assert().success();
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
 
     // Check migration message was shown
     let stderr = String::from_utf8_lossy(&output.get_output().stderr);
     assert!(
-        stderr.contains("Migrating xlaude state")
+        stderr.contains("Migrating pigs state")
             || stdout.contains("another-repo")
             || stdout.contains("test-repo")
     );
@@ -750,8 +750,8 @@ fn test_mixed_format_migration() {
     // Write mixed format state
     ctx.write_state(&mixed_state);
 
-    // Run any xlaude command that loads state
-    ctx.xlaude(&["list"]).assert().success();
+    // Run any pigs command that loads state
+    ctx.pigs(&["list"]).assert().success();
 
     // Read the migrated state
     let migrated_state = ctx.read_state();
@@ -773,13 +773,13 @@ fn test_open_current_worktree_already_managed() {
     let ctx = TestContext::new("test-repo");
 
     // Create a worktree
-    ctx.xlaude(&["create", "feature-x"]).assert().success();
+    ctx.pigs(&["create", "feature-x"]).assert().success();
 
     // Navigate to the worktree directory
     let worktree_dir = ctx.temp_dir.path().join("test-repo-feature-x");
 
     // Open from within the worktree - should open directly since it's already managed
-    ctx.xlaude_in_dir(&worktree_dir, &["open"])
+    ctx.pigs_in_dir(&worktree_dir, &["open"])
         .assert()
         .success()
         .stdout(predicates::str::contains("Opening current worktree"));
@@ -806,7 +806,7 @@ fn test_open_current_worktree_not_managed() {
 
     // Try to open from within the unmanaged worktree
     // In non-interactive mode, it should just print info and exit
-    ctx.xlaude_in_dir(&worktree_dir, &["open"])
+    ctx.pigs_in_dir(&worktree_dir, &["open"])
         .assert()
         .success()
         .stdout(predicates::str::contains(
@@ -819,10 +819,10 @@ fn test_open_from_base_branch() {
     let ctx = TestContext::new("test-repo");
 
     // Create a worktree for testing
-    ctx.xlaude(&["create", "feature-y"]).assert().success();
+    ctx.pigs(&["create", "feature-y"]).assert().success();
 
     // Try to open from main branch (should fall through to normal behavior)
-    ctx.xlaude(&["open"])
+    ctx.pigs(&["open"])
         .assert()
         .failure() // Will fail in non-interactive mode since it needs selection
         .stderr(predicates::str::contains(
@@ -835,12 +835,12 @@ fn test_open_from_main_repo_not_worktree() {
     let ctx = TestContext::new("test-repo");
 
     // Create some worktrees first
-    ctx.xlaude(&["create", "feature-a"]).assert().success();
-    ctx.xlaude(&["create", "feature-b"]).assert().success();
+    ctx.pigs(&["create", "feature-a"]).assert().success();
+    ctx.pigs(&["create", "feature-b"]).assert().success();
 
     // Try to open from the main repo (not a worktree, on main branch)
     // Should fall through to selection mode
-    ctx.xlaude(&["open"])
+    ctx.pigs(&["open"])
         .assert()
         .failure()
         .stderr(predicates::str::contains(
@@ -852,7 +852,7 @@ fn test_open_from_main_repo_not_worktree() {
 fn test_open_from_non_git_directory() {
     let temp_dir = TempDir::new().unwrap();
     let non_git_dir = temp_dir.path().join("not-a-repo");
-    let config_dir = temp_dir.path().join(".config/xlaude");
+    let config_dir = temp_dir.path().join(".config/pigs");
     fs::create_dir_all(&non_git_dir).unwrap();
     fs::create_dir_all(&config_dir).unwrap();
 
@@ -861,11 +861,11 @@ fn test_open_from_non_git_directory() {
     fs::write(config_dir.join("state.json"), state.to_string()).unwrap();
 
     // Try to open from a non-git directory with empty worktrees
-    let mut cmd = cargo_bin_cmd!("xlaude");
+    let mut cmd = cargo_bin_cmd!("pigs");
     cmd.current_dir(&non_git_dir)
         .env("HOME", temp_dir.path())
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
         .arg("open")
         .assert()
         .failure()
@@ -877,10 +877,10 @@ fn test_rename_command() {
     let ctx = TestContext::new("test-repo");
 
     // Create a worktree first
-    ctx.xlaude(&["create", "old-name"]).assert().success();
+    ctx.pigs(&["create", "old-name"]).assert().success();
 
     // Rename the worktree
-    ctx.xlaude(&["rename", "old-name", "new-name"])
+    ctx.pigs(&["rename", "old-name", "new-name"])
         .assert()
         .success()
         .stdout(predicates::str::contains("Renamed worktree"))
@@ -888,21 +888,21 @@ fn test_rename_command() {
         .stdout(predicates::str::contains("new-name"));
 
     // Verify the rename in the list
-    ctx.xlaude(&["list"])
+    ctx.pigs(&["list"])
         .assert()
         .success()
         .stdout(predicates::str::contains("• new-name")); // Check that the name is updated in the list
 
     // Try to rename non-existent worktree
-    ctx.xlaude(&["rename", "non-existent", "some-name"])
+    ctx.pigs(&["rename", "non-existent", "some-name"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("not found"));
 
     // Try to rename to existing name
-    ctx.xlaude(&["create", "another-name"]).assert().success();
+    ctx.pigs(&["create", "another-name"]).assert().success();
 
-    ctx.xlaude(&["rename", "new-name", "another-name"])
+    ctx.pigs(&["rename", "new-name", "another-name"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("already exists"));
@@ -913,10 +913,10 @@ fn test_create_duplicate_name() {
     let ctx = TestContext::new("test-repo");
 
     // Create a worktree with a specific name
-    ctx.xlaude(&["create", "my-feature"]).assert().success();
+    ctx.pigs(&["create", "my-feature"]).assert().success();
 
     // Try to create another worktree with the same name - should fail
-    ctx.xlaude(&["create", "my-feature"])
+    ctx.pigs(&["create", "my-feature"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("already exists"))
@@ -933,7 +933,7 @@ fn test_create_duplicate_name() {
 fn test_create_existing_git_worktree() {
     let ctx = TestContext::new("test-repo");
 
-    // Create a worktree manually using git (not tracked by xlaude)
+    // Create a worktree manually using git (not tracked by pigs)
     std::process::Command::new("git")
         .args([
             "worktree",
@@ -946,19 +946,19 @@ fn test_create_existing_git_worktree() {
         .output()
         .unwrap();
 
-    // Try to create a worktree with the same name through xlaude - should fail
-    ctx.xlaude(&["create", "existing-feature"])
+    // Try to create a worktree with the same name through pigs - should fail
+    ctx.pigs(&["create", "existing-feature"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("already exists"));
 
-    // Verify xlaude state is still empty
+    // Verify pigs state is still empty
     let state = ctx.read_state();
     if let Some(worktrees) = state["worktrees"].as_object() {
         assert_eq!(
             worktrees.len(),
             0,
-            "Should have no worktrees in xlaude state"
+            "Should have no worktrees in pigs state"
         );
     }
 }
@@ -973,19 +973,19 @@ fn test_create_existing_directory() {
     fs::write(existing_dir.join("file.txt"), "existing content").unwrap();
 
     // Try to create a worktree with the same name - should fail
-    ctx.xlaude(&["create", "existing-dir"])
+    ctx.pigs(&["create", "existing-dir"])
         .assert()
         .failure()
         .stderr(predicates::str::contains("Directory"))
         .stderr(predicates::str::contains("already exists"));
 
-    // Verify xlaude state is still empty
+    // Verify pigs state is still empty
     let state = ctx.read_state();
     if let Some(worktrees) = state["worktrees"].as_object() {
         assert_eq!(
             worktrees.len(),
             0,
-            "Should have no worktrees in xlaude state"
+            "Should have no worktrees in pigs state"
         );
     }
 }
@@ -1014,7 +1014,7 @@ fn test_create_with_submodules() {
         .unwrap();
 
     // Create a worktree
-    let output = ctx.xlaude(&["create", "with-submodule"]).assert().success();
+    let output = ctx.pigs(&["create", "with-submodule"]).assert().success();
 
     // Snapshot test output with path redaction
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -1030,7 +1030,7 @@ fn test_create_without_submodules() {
     let ctx = TestContext::new("test-repo");
 
     // Create a worktree in a repo without submodules
-    let output = ctx.xlaude(&["create", "no-submodule"]).assert().success();
+    let output = ctx.pigs(&["create", "no-submodule"]).assert().success();
 
     // Snapshot test output with path redaction
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -1050,7 +1050,7 @@ fn test_create_with_slash_in_branch_name() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree with branch name containing slash
-    let output = ctx.xlaude(&["create", "fix/bug"]).assert().success();
+    let output = ctx.pigs(&["create", "fix/bug"]).assert().success();
 
     // Snapshot test output with path redaction
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
@@ -1083,7 +1083,7 @@ fn test_delete_with_slash_in_branch_name() {
     let ctx = TestContext::new("test-repo");
 
     // Create worktree with branch name containing slash
-    ctx.xlaude(&["create", "feature/awesome"])
+    ctx.pigs(&["create", "feature/awesome"])
         .assert()
         .success();
 
@@ -1097,7 +1097,7 @@ fn test_delete_with_slash_in_branch_name() {
         .unwrap()
         .join("test-repo-feature-awesome");
     let output = ctx
-        .xlaude_in_dir(&worktree_dir, &["delete"])
+        .pigs_in_dir(&worktree_dir, &["delete"])
         .assert()
         .success();
 

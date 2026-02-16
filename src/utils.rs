@@ -5,7 +5,7 @@ use std::path::Path;
 
 pub fn generate_random_name() -> Result<String> {
     // Allow setting seed for testing
-    let mut rng = if let Ok(seed_str) = std::env::var("XLAUDE_TEST_SEED") {
+    let mut rng = if let Ok(seed_str) = std::env::var("PIGS_TEST_SEED") {
         let seed: u64 = seed_str.parse().unwrap_or(42);
         Box::new(rand::rngs::StdRng::seed_from_u64(seed)) as Box<dyn RngCore>
     } else {
@@ -20,7 +20,7 @@ pub fn generate_random_name() -> Result<String> {
     let words: Vec<&str> = mnemonic.words().collect();
 
     // Use the same RNG for choosing the word
-    let mut chooser_rng = if let Ok(seed_str) = std::env::var("XLAUDE_TEST_SEED") {
+    let mut chooser_rng = if let Ok(seed_str) = std::env::var("PIGS_TEST_SEED") {
         let seed: u64 = seed_str.parse().unwrap_or(42);
         rand::rngs::StdRng::seed_from_u64(seed)
     } else {
@@ -58,7 +58,7 @@ where
 
 /// Resolve agent command from state or default, and split into program + args.
 pub fn resolve_agent_command() -> Result<(String, Vec<String>)> {
-    let state = crate::state::XlaudeState::load()?;
+    let state = crate::state::PigsState::load()?;
     let cmdline = state
         .agent
         .clone()
@@ -228,8 +228,8 @@ mod tests {
 
         temp_env::with_vars(
             [
-                ("XLAUDE_CONFIG_DIR", Some(config_dir_str.as_str())),
-                ("XLAUDE_CODEX_SESSIONS_DIR", Some(sessions_dir_str.as_str())),
+                ("PIGS_CONFIG_DIR", Some(config_dir_str.as_str())),
+                ("PIGS_CODEX_SESSIONS_DIR", Some(sessions_dir_str.as_str())),
             ],
             || {
                 let (program, args) = prepare_agent_command(&worktree_path).unwrap();

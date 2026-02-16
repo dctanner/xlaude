@@ -18,7 +18,7 @@ use commands::{
 };
 
 #[derive(Parser)]
-#[command(name = "xlaude")]
+#[command(name = "pigs")]
 #[command(about = "Manage Claude instances with git worktrees", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -68,7 +68,7 @@ enum Commands {
         #[arg(long)]
         all: bool,
     },
-    /// Add current worktree to xlaude management
+    /// Add current worktree to pigs management
     Add {
         /// Name for the worktree (defaults to current branch name)
         name: Option<String>,
@@ -106,7 +106,7 @@ enum Commands {
         #[arg(long, default_value = "simple")]
         format: String,
     },
-    /// Open the xlaude state file in $EDITOR
+    /// Open the pigs state file in $EDITOR
     Config,
     /// Launch the embedded dashboard
     Dashboard {

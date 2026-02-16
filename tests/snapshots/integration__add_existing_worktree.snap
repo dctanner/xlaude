@@ -2,6 +2,6 @@
 source: tests/integration.rs
 expression: redacted
 ---
-➕ Adding worktree 'manual' to xlaude management...
+➕ Adding worktree 'manual' to pigs management...
 ✅ Worktree 'manual' added successfully
   Path: /tmp/TEST_DIR/test-repo-manual

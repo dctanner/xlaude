@@ -7,7 +7,7 @@ use colored::Colorize;
 use crate::commands::open::handle_open;
 use crate::git::{copy_files_to_worktree, execute_git, get_repo_name, update_submodules};
 use crate::input::{get_command_arg, smart_confirm};
-use crate::state::{RepoConfig, WorktreeInfo, XlaudeState};
+use crate::state::{RepoConfig, WorktreeInfo, PigsState};
 use crate::utils::sanitize_branch_name;
 
 pub fn handle_checkout(target: Option<String>, yes: bool, agent_args: Vec<String>) -> Result<()> {
@@ -41,12 +41,12 @@ pub fn handle_checkout(target: Option<String>, yes: bool, agent_args: Vec<String
         println!(
             "  {} To open it manually, run: {} {}",
             "💡".cyan(),
-            "xlaude open".cyan(),
+            "pigs open".cyan(),
             existing.name.cyan()
         );
 
         let should_open = smart_confirm(
-            "Worktree already exists. Open it now with 'xlaude open'?",
+            "Worktree already exists. Open it now with 'pigs open'?",
             false,
         )?;
 
@@ -79,13 +79,13 @@ pub fn handle_checkout(target: Option<String>, yes: bool, agent_args: Vec<String
         created_path.display()
     );
 
-    let should_open = if std::env::var("XLAUDE_TEST_MODE").is_ok()
-        || std::env::var("XLAUDE_NO_AUTO_OPEN").is_ok()
+    let should_open = if std::env::var("PIGS_TEST_MODE").is_ok()
+        || std::env::var("PIGS_NO_AUTO_OPEN").is_ok()
     {
         println!(
             "  {} To open it, run: {} {}",
             "💡".cyan(),
-            "xlaude open".cyan(),
+            "pigs open".cyan(),
             worktree_name.cyan()
         );
         false
@@ -97,11 +97,11 @@ pub fn handle_checkout(target: Option<String>, yes: bool, agent_args: Vec<String
 
     if should_open {
         handle_open(Some(worktree_name), agent_args)?;
-    } else if std::env::var("XLAUDE_NON_INTERACTIVE").is_err() {
+    } else if std::env::var("PIGS_NON_INTERACTIVE").is_err() {
         println!(
             "  {} To open it later, run: {} {}",
             "💡".cyan(),
-            "xlaude open".cyan(),
+            "pigs open".cyan(),
             worktree_name.cyan()
         );
     }
@@ -110,7 +110,7 @@ pub fn handle_checkout(target: Option<String>, yes: bool, agent_args: Vec<String
 }
 
 fn find_existing_worktree(repo_name: &str, branch_name: &str) -> Result<Option<ExistingWorktree>> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
     Ok(state
         .worktrees
         .values()
@@ -234,8 +234,8 @@ fn create_worktree(
         );
     }
 
-    let mut state = XlaudeState::load()?;
-    let key = XlaudeState::make_key(repo_name, worktree_name);
+    let mut state = PigsState::load()?;
+    let key = PigsState::make_key(repo_name, worktree_name);
     if state.worktrees.contains_key(&key) {
         bail!(
             "A worktree named '{}' is already tracked for '{}'.",

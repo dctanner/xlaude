@@ -9,8 +9,8 @@ fn setup_test_repo() -> (TempDir, String, String) {
     let repo_path = temp_dir.path().join("test-repo");
     fs::create_dir(&repo_path).unwrap();
 
-    // Create config directory for xlaude state and default agent
-    let config_dir = temp_dir.path().join(".config/xlaude");
+    // Create config directory for pigs state and default agent
+    let config_dir = temp_dir.path().join(".config/pigs");
     fs::create_dir_all(&config_dir).unwrap();
     let default_state = serde_json::json!({
         "worktrees": {},
@@ -77,11 +77,11 @@ fn test_create_with_piped_input() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // Test creating worktree with piped name
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
-        .env("XLAUDE_TEST_MODE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
+        .env("PIGS_TEST_MODE", "1")
         .args(["create"])
         .write_stdin("test-feature\n");
 
@@ -102,20 +102,20 @@ fn test_dir_with_piped_input() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // First create a worktree
-    Command::new(env!("CARGO_BIN_EXE_xlaude"))
+    Command::new(env!("CARGO_BIN_EXE_pigs"))
         .current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
-        .env("XLAUDE_TEST_MODE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
+        .env("PIGS_TEST_MODE", "1")
         .args(["create", "test-dir"])
         .assert()
         .success();
 
     // Test getting directory with piped input
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
         .args(["dir"])
         .write_stdin("test-dir\n");
 
@@ -129,19 +129,19 @@ fn test_delete_with_auto_confirm() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // Create a worktree
-    Command::new(env!("CARGO_BIN_EXE_xlaude"))
+    Command::new(env!("CARGO_BIN_EXE_pigs"))
         .current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
-        .env("XLAUDE_TEST_MODE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
+        .env("PIGS_TEST_MODE", "1")
         .args(["create", "test-delete"])
         .assert()
         .success();
 
     // Test deleting with piped confirmation
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
+        .env("PIGS_CONFIG_DIR", &config_dir)
         .args(["delete", "test-delete"])
         .write_stdin("y\n");
 
@@ -152,13 +152,13 @@ fn test_delete_with_auto_confirm() {
 
 #[test]
 fn test_delete_with_env_yes() {
-    // This test primarily demonstrates that XLAUDE_YES environment variable
+    // This test primarily demonstrates that PIGS_YES environment variable
     // can be used to auto-confirm prompts. The actual deletion test would
     // require proper state management which is complex in test environments.
 
-    // Test that XLAUDE_YES is recognized by running help with it set
-    Command::new(env!("CARGO_BIN_EXE_xlaude"))
-        .env("XLAUDE_YES", "1")
+    // Test that PIGS_YES is recognized by running help with it set
+    Command::new(env!("CARGO_BIN_EXE_pigs"))
+        .env("PIGS_YES", "1")
         .args(["--help"])
         .assert()
         .success();
@@ -170,9 +170,9 @@ fn test_multiple_confirmations_with_pipe() {
 
     // Test that we can provide multiple answers via pipe
     // Create with "n" answer to not open
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
+        .env("PIGS_CONFIG_DIR", &config_dir)
         .args(["create", "test-multi"])
         .write_stdin("n\n"); // Answer no to open prompt
 
@@ -187,9 +187,9 @@ fn test_create_with_piped_confirmation() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // Test creating worktree and answering "no" to open prompt via pipe
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
+        .env("PIGS_CONFIG_DIR", &config_dir)
         .args(["create", "test-no-open"])
         .write_stdin("n\n"); // Answer "no" to the open prompt
 
@@ -204,20 +204,20 @@ fn test_yes_doesnt_interfere_with_open() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // Create a worktree
-    Command::new(env!("CARGO_BIN_EXE_xlaude"))
+    Command::new(env!("CARGO_BIN_EXE_pigs"))
         .current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
-        .env("XLAUDE_TEST_MODE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
+        .env("PIGS_TEST_MODE", "1")
         .args(["create", "test-yes"])
         .assert()
         .success();
 
     // Test that 'yes' doesn't interfere with opening
     // The extra 'y' lines should be drained and not passed to the mock Claude command
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
+        .env("PIGS_CONFIG_DIR", &config_dir)
         // agent is set to "true" in state; no need to override
         .args(["open", "test-yes"])
         .write_stdin("y\ny\ny\n"); // Extra yes responses that should be drained
@@ -233,19 +233,19 @@ fn test_pipe_input_priority() {
     let (_temp_dir, repo_path, config_dir) = setup_test_repo();
 
     // Create a worktree
-    Command::new(env!("CARGO_BIN_EXE_xlaude"))
+    Command::new(env!("CARGO_BIN_EXE_pigs"))
         .current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
-        .env("XLAUDE_NON_INTERACTIVE", "1")
-        .env("XLAUDE_TEST_MODE", "1")
+        .env("PIGS_CONFIG_DIR", &config_dir)
+        .env("PIGS_NON_INTERACTIVE", "1")
+        .env("PIGS_TEST_MODE", "1")
         .args(["create", "priority-test"])
         .assert()
         .success();
 
     // Test that CLI argument takes priority over piped input
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_xlaude"));
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_pigs"));
     cmd.current_dir(&repo_path)
-        .env("XLAUDE_CONFIG_DIR", &config_dir)
+        .env("PIGS_CONFIG_DIR", &config_dir)
         .args(["dir", "priority-test"])
         .write_stdin("wrong-name\n");
 

@@ -3,7 +3,7 @@ use colored::Colorize;
 
 use crate::git::{execute_git, has_unpushed_commits, is_working_tree_clean};
 use crate::input::{get_command_arg, smart_confirm};
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 use crate::utils::execute_in_dir;
 
 /// Represents the result of various checks performed before deletion
@@ -36,7 +36,7 @@ impl DeletionConfig {
         let current_dir = std::env::current_dir()?;
 
         Ok(Self {
-            is_interactive: std::env::var("XLAUDE_NON_INTERACTIVE").is_err(),
+            is_interactive: std::env::var("PIGS_NON_INTERACTIVE").is_err(),
             worktree_exists: worktree_info.path.exists(),
             is_current_directory: current_dir == worktree_info.path,
         })
@@ -48,7 +48,7 @@ pub fn handle_delete(name: Option<String>, all: bool) -> Result<()> {
         return handle_delete_all();
     }
 
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
     // Get name from CLI args or pipe
     let target_name = get_command_arg(name)?;
@@ -100,7 +100,7 @@ pub fn handle_delete(name: Option<String>, all: bool) -> Result<()> {
 }
 
 fn handle_delete_all() -> Result<()> {
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
     if state.worktrees.is_empty() {
         println!("{} No worktrees to delete", "ℹ️ ".blue());
@@ -194,7 +194,7 @@ fn handle_delete_all() -> Result<()> {
 
 /// Find the worktree to delete based on the provided name or current directory
 fn find_worktree_to_delete(
-    state: &XlaudeState,
+    state: &PigsState,
     name: Option<String>,
 ) -> Result<(String, WorktreeInfo)> {
     if let Some(n) = name {
@@ -212,7 +212,7 @@ fn find_worktree_to_delete(
 }
 
 /// Find the worktree that matches the current directory
-fn find_current_worktree(state: &XlaudeState) -> Result<(String, WorktreeInfo)> {
+fn find_current_worktree(state: &PigsState) -> Result<(String, WorktreeInfo)> {
     let current_dir = std::env::current_dir()?;
     let dir_name = current_dir
         .file_name()
@@ -239,7 +239,7 @@ fn handle_missing_worktree(worktree_info: &WorktreeInfo, _config: &DeletionConfi
         "ℹ️".blue()
     );
 
-    smart_confirm("Remove this worktree from xlaude management?", true)
+    smart_confirm("Remove this worktree from pigs management?", true)
 }
 
 /// Perform all checks needed before deletion

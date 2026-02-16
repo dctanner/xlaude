@@ -5,11 +5,11 @@ use std::process::{Command, Stdio};
 
 use crate::git::{get_current_branch, get_repo_name, is_base_branch, is_in_worktree};
 use crate::input::{drain_stdin, get_command_arg, is_piped_input, smart_confirm, smart_select};
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 use crate::utils::{prepare_agent_command, sanitize_branch_name};
 
 pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> {
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
     // Check if current path is a worktree when no name is provided
     // Note: base branches (main/master/develop) are not considered worktrees
@@ -17,7 +17,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
     if name.is_none() && is_in_worktree()? && !is_base_branch()? {
         // If there's piped input waiting, don't use current worktree detection
         // This allows piped input to override current directory detection
-        if is_piped_input() && std::env::var("XLAUDE_TEST_MODE").is_err() {
+        if is_piped_input() && std::env::var("PIGS_TEST_MODE").is_err() {
             // There's piped input, so skip current worktree detection
         } else {
             // Get current repository info
@@ -29,7 +29,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
             let worktree_name = sanitize_branch_name(&current_branch);
 
             // Check if this worktree is already managed
-            let key = XlaudeState::make_key(&repo_name, &worktree_name);
+            let key = PigsState::make_key(&repo_name, &worktree_name);
 
             if state.worktrees.contains_key(&key) {
                 // Already managed, open directly
@@ -42,7 +42,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
             } else {
                 // Not managed, ask if user wants to add it
                 println!(
-                    "{} Current directory is a worktree but not managed by xlaude",
+                    "{} Current directory is a worktree but not managed by pigs",
                     "ℹ️".blue()
                 );
                 println!(
@@ -55,7 +55,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
 
                 // Use smart confirm for pipe support
                 let should_add = smart_confirm(
-                    "Would you like to add this worktree to xlaude and open it?",
+                    "Would you like to add this worktree to pigs and open it?",
                     true,
                 )?;
 
@@ -65,7 +65,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
 
                 // Add to state
                 println!(
-                    "{} Adding worktree '{}' to xlaude management...",
+                    "{} Adding worktree '{}' to pigs management...",
                     "➕".green(),
                     worktree_name.cyan()
                 );
@@ -116,7 +116,7 @@ pub fn handle_open(name: Option<String>, agent_args: Vec<String>) -> Result<()> 
     }
 
     if state.worktrees.is_empty() {
-        anyhow::bail!("No worktrees found. Create one first with 'xlaude create'");
+        anyhow::bail!("No worktrees found. Create one first with 'pigs create'");
     }
 
     // Get the name from CLI args or pipe

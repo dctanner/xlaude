@@ -4,7 +4,7 @@ use colored::Colorize;
 use std::fs;
 
 use crate::git::{get_current_branch, get_repo_name, is_in_worktree};
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 use crate::utils::sanitize_branch_name;
 
 pub fn handle_add(name: Option<String>) -> Result<()> {
@@ -29,7 +29,7 @@ pub fn handle_add(name: Option<String>) -> Result<()> {
     let current_dir = std::env::current_dir()?;
 
     // Load state
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
     let normalize_path = |path: &std::path::Path| -> std::path::PathBuf {
         fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
@@ -43,7 +43,7 @@ pub fn handle_add(name: Option<String>) -> Result<()> {
         .find(|info| normalize_path(&info.path) == current_dir_key)
     {
         anyhow::bail!(
-            "Current directory '{}' is already managed by xlaude as '{}/{}'",
+            "Current directory '{}' is already managed by pigs as '{}/{}'",
             current_dir.display(),
             existing.repo_name,
             existing.name
@@ -51,17 +51,17 @@ pub fn handle_add(name: Option<String>) -> Result<()> {
     }
 
     // Check if already managed under the same name
-    let key = XlaudeState::make_key(&repo_name, &worktree_name);
+    let key = PigsState::make_key(&repo_name, &worktree_name);
     if state.worktrees.contains_key(&key) {
         anyhow::bail!(
-            "Worktree '{}/{}' is already managed by xlaude",
+            "Worktree '{}/{}' is already managed by pigs",
             repo_name,
             worktree_name
         );
     }
 
     println!(
-        "{} Adding worktree '{}' to xlaude management...",
+        "{} Adding worktree '{}' to pigs management...",
         "➕".green(),
         worktree_name.cyan()
     );

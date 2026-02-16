@@ -3,15 +3,15 @@
 ## [0.6.0] - 2025-10-27
 
 ### Added
-- Resume the latest Codex session automatically when launching the agent, making `xlaude open` pick up the previous conversation without manual steps. (#70)
-- Introduce `xlaude checkout` to create worktrees directly from existing branches or GitHub pull requests without duplicating branches. (#74)
+- Resume the latest Codex session automatically when launching the agent, making `pigs open` pick up the previous conversation without manual steps. (#70)
+- Introduce `pigs checkout` to create worktrees directly from existing branches or GitHub pull requests without duplicating branches. (#74)
 
 ### Fixed
 - Prevent duplicate worktree registration when adding existing instances. (#64)
 - Eliminate duplicate input characters in dashboard create mode. (#66)
 
 ### Documentation
-- Document how to configure and use Codex with xlaude. (#72)
+- Document how to configure and use Codex with pigs. (#72)
 
 ### Maintenance
 - Bump the CLI version to 0.6.0 in preparation for release.

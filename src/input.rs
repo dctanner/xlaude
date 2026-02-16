@@ -60,7 +60,7 @@ pub fn read_piped_line() -> Result<Option<String>> {
 /// Smart confirmation that supports piped input (yes/no)
 pub fn smart_confirm(prompt: &str, default: bool) -> Result<bool> {
     // 1. Check for force-yes environment variable
-    if std::env::var("XLAUDE_YES").is_ok() {
+    if std::env::var("PIGS_YES").is_ok() {
         return Ok(true);
     }
 
@@ -71,7 +71,7 @@ pub fn smart_confirm(prompt: &str, default: bool) -> Result<bool> {
     }
 
     // 3. Non-interactive mode uses default value
-    if std::env::var("XLAUDE_NON_INTERACTIVE").is_ok() {
+    if std::env::var("PIGS_NON_INTERACTIVE").is_ok() {
         return Ok(default);
     }
 
@@ -112,7 +112,7 @@ where
     }
 
     // 2. Non-interactive mode returns None
-    if std::env::var("XLAUDE_NON_INTERACTIVE").is_ok() {
+    if std::env::var("PIGS_NON_INTERACTIVE").is_ok() {
         return Ok(None);
     }
 

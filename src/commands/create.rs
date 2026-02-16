@@ -9,7 +9,7 @@ use crate::git::{
     update_submodules,
 };
 use crate::input::{get_command_arg, smart_confirm};
-use crate::state::{RepoConfig, WorktreeInfo, XlaudeState};
+use crate::state::{RepoConfig, WorktreeInfo, PigsState};
 use crate::utils::{generate_random_name, sanitize_branch_name};
 
 pub fn handle_create(
@@ -72,7 +72,7 @@ pub fn handle_create_in_dir_quiet(
 
     // Resolve --from target to a source branch if provided
     let source_branch = if let Some(ref from_target) = from {
-        Some(resolve_from_target(from_target, &exec_git)?)
+        Some(resolve_from_target(from_target, &repo_name, &exec_git)?)
     } else {
         None
     };
@@ -106,12 +106,12 @@ pub fn handle_create_in_dir_quiet(
     // Sanitize the branch name for use in directory names
     let worktree_name = sanitize_branch_name(&branch_name);
 
-    // Check if a worktree with this name already exists in xlaude state
-    let state = XlaudeState::load()?;
-    let key = XlaudeState::make_key(&repo_name, &worktree_name);
+    // Check if a worktree with this name already exists in pigs state
+    let state = PigsState::load()?;
+    let key = PigsState::make_key(&repo_name, &worktree_name);
     if state.worktrees.contains_key(&key) {
         anyhow::bail!(
-            "A worktree named '{}' already exists for repository '{}' (tracked by xlaude). Please choose a different name.",
+            "A worktree named '{}' already exists for repository '{}' (tracked by pigs). Please choose a different name.",
             worktree_name,
             repo_name
         );
@@ -270,8 +270,8 @@ pub fn handle_create_in_dir_quiet(
     copy_files_to_worktree(&source_root, &worktree_path, &repo_config.copy_files, quiet)?;
 
     // Save state
-    let mut state = XlaudeState::load()?;
-    let key = XlaudeState::make_key(&repo_name, &worktree_name);
+    let mut state = PigsState::load()?;
+    let key = PigsState::make_key(&repo_name, &worktree_name);
     state.worktrees.insert(
         key,
         WorktreeInfo {
@@ -295,13 +295,13 @@ pub fn handle_create_in_dir_quiet(
     // Ask if user wants to open the worktree (skip in quiet mode)
     if !quiet {
         // Skip opening in test mode or when explicitly disabled
-        let should_open = if std::env::var("XLAUDE_TEST_MODE").is_ok()
-            || std::env::var("XLAUDE_NO_AUTO_OPEN").is_ok()
+        let should_open = if std::env::var("PIGS_TEST_MODE").is_ok()
+            || std::env::var("PIGS_NO_AUTO_OPEN").is_ok()
         {
             println!(
                 "  {} To open it, run: {} {}",
                 "💡".cyan(),
-                "xlaude open".cyan(),
+                "pigs open".cyan(),
                 worktree_name.cyan()
             );
             false
@@ -313,11 +313,11 @@ pub fn handle_create_in_dir_quiet(
 
         if should_open {
             handle_open(Some(worktree_name.clone()), agent_args)?;
-        } else if std::env::var("XLAUDE_NON_INTERACTIVE").is_err() {
+        } else if std::env::var("PIGS_NON_INTERACTIVE").is_err() {
             println!(
                 "  {} To open it later, run: {} {}",
                 "💡".cyan(),
-                "xlaude open".cyan(),
+                "pigs open".cyan(),
                 worktree_name.cyan()
             );
         }
@@ -329,22 +329,35 @@ pub fn handle_create_in_dir_quiet(
 /// Resolve a `--from` target to a branch name.
 ///
 /// Priority:
-/// 1. Look up as an xlaude worktree name (key lookup, then scan by `.name`)
+/// 1. Look up as a pigs worktree name in the current repo (exact, then sanitized)
 /// 2. Treat as a raw branch name (verified via `git show-ref`)
 fn resolve_from_target(
     target: &str,
+    repo_name: &str,
     exec_git: &impl Fn(&[&str]) -> Result<String>,
 ) -> Result<String> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
+    let sanitized = sanitize_branch_name(target);
 
-    // Try key lookup first (repo/name format)
-    if let Some(info) = state.worktrees.get(target) {
+    // Try full key lookup (repo/name format)
+    let key = PigsState::make_key(repo_name, target);
+    if let Some(info) = state.worktrees.get(&key) {
         return Ok(info.branch.clone());
     }
+    // Also try with sanitized name
+    if sanitized != target {
+        let key = PigsState::make_key(repo_name, &sanitized);
+        if let Some(info) = state.worktrees.get(&key) {
+            return Ok(info.branch.clone());
+        }
+    }
 
-    // Scan by worktree name
+    // Scan by worktree name within the same repo
     for info in state.worktrees.values() {
-        if info.name == target {
+        if info.repo_name != repo_name {
+            continue;
+        }
+        if info.name == target || info.name == sanitized {
             return Ok(info.branch.clone());
         }
     }
@@ -360,8 +373,21 @@ fn resolve_from_target(
         return Ok(target.to_string());
     }
 
+    // Try remote branch (origin/<target>)
+    let remote_ref = format!("origin/{}", target);
+    if exec_git(&[
+        "show-ref",
+        "--verify",
+        &format!("refs/remotes/{}", remote_ref),
+    ])
+    .is_ok()
+    {
+        return Ok(remote_ref);
+    }
+
     anyhow::bail!(
-        "Cannot resolve --from '{}': not a known worktree name or local branch.",
-        target
+        "Cannot resolve --from '{}': not a known worktree name, local branch, or remote branch in '{}'.",
+        target,
+        repo_name
     )
 }

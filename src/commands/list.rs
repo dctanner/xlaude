@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use crate::claude::get_claude_sessions;
 use crate::codex;
-use crate::state::XlaudeState;
+use crate::state::PigsState;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct JsonSessionInfo {
@@ -75,7 +75,7 @@ fn format_message_preview(message: &str, limit: usize) -> String {
 }
 
 pub fn handle_list(json: bool) -> Result<()> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
 
     if state.worktrees.is_empty() {
         if json {

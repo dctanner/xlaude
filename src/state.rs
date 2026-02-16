@@ -16,7 +16,7 @@ pub struct WorktreeInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct XlaudeState {
+pub struct PigsState {
     // Key format: "{repo_name}/{worktree_name}"
     pub worktrees: HashMap<String, WorktreeInfo>,
     // Global agent command to launch sessions (full command line string)
@@ -30,7 +30,7 @@ pub struct XlaudeState {
     pub shell: Option<String>,
 }
 
-impl XlaudeState {
+impl PigsState {
     pub fn make_key(repo_name: &str, worktree_name: &str) -> String {
         format!("{repo_name}/{worktree_name}")
     }
@@ -52,7 +52,7 @@ impl XlaudeState {
             let needs_migration = state.worktrees.keys().any(|k| !k.contains('/'));
 
             if needs_migration {
-                eprintln!("🔄 Migrating xlaude state from v0.2 to v0.3 format...");
+                eprintln!("🔄 Migrating pigs state from v0.2 to v0.3 format...");
 
                 let mut migrated_worktrees = HashMap::new();
                 for (old_key, info) in state.worktrees {
@@ -96,11 +96,11 @@ impl XlaudeState {
 
 pub fn get_config_dir() -> Result<PathBuf> {
     // Allow overriding config directory for testing
-    if let Ok(config_dir) = std::env::var("XLAUDE_CONFIG_DIR") {
+    if let Ok(config_dir) = std::env::var("PIGS_CONFIG_DIR") {
         return Ok(PathBuf::from(config_dir));
     }
 
-    let proj_dirs = ProjectDirs::from("com", "xuanwo", "xlaude")
+    let proj_dirs = ProjectDirs::from("com", "dctanner", "pigs")
         .context("Failed to determine config directory")?;
     Ok(proj_dirs.config_dir().to_path_buf())
 }
@@ -121,10 +121,10 @@ pub struct RepoConfig {
 
 impl RepoConfig {
     pub fn load(repo_root: &Path) -> Result<Self> {
-        let config_path = repo_root.join(".xlaude/state.json");
+        let config_path = repo_root.join(".pigs/state.json");
         if config_path.exists() {
             let content = fs::read_to_string(&config_path)
-                .context("Failed to read repo-level .xlaude/state.json")?;
+                .context("Failed to read repo-level .pigs/state.json")?;
             Ok(serde_json::from_str(&content)?)
         } else {
             Ok(Self::default())

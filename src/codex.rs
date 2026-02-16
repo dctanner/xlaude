@@ -16,7 +16,7 @@ pub struct CodexSession {
 }
 
 fn sessions_root() -> Option<PathBuf> {
-    if let Ok(dir) = std::env::var("XLAUDE_CODEX_SESSIONS_DIR") {
+    if let Ok(dir) = std::env::var("PIGS_CODEX_SESSIONS_DIR") {
         return Some(PathBuf::from(dir));
     }
 

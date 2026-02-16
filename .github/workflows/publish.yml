@@ -42,6 +42,6 @@ jobs:
       # 1. Go to https://crates.io/me
       # 2. Navigate to your crate's settings
       # 3. Add GitHub Actions as a trusted publisher:
-      #    - Repository: xuanwo/xlaude
+      #    - Repository: dctanner/pigs
       #    - Workflow: publish.yml
       #    - Environment: crates.io

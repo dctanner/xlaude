@@ -4,7 +4,7 @@ expression: combined
 ---
 STDOUT:
 ⚠️ Worktree for branch 'checkout-existing' already exists at /tmp/TEST_DIR/test-repo-checkout-existing
-  💡 To open it manually, run: xlaude open checkout-existing
+  💡 To open it manually, run: pigs open checkout-existing
 
 ---
 STDERR:

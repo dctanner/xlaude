@@ -2,14 +2,14 @@ use anyhow::{Context, Result, bail};
 use colored::Colorize;
 
 use crate::git;
-use crate::state::XlaudeState;
+use crate::state::PigsState;
 
 pub fn handle_rename(old_name: String, new_name: String) -> Result<()> {
     let repo = git::get_repo_name()?;
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
-    let old_key = XlaudeState::make_key(&repo, &old_name);
-    let new_key = XlaudeState::make_key(&repo, &new_name);
+    let old_key = PigsState::make_key(&repo, &old_name);
+    let new_key = PigsState::make_key(&repo, &new_name);
 
     if !state.worktrees.contains_key(&old_key) {
         bail!("Worktree '{}' not found in repository '{}'", old_name, repo);

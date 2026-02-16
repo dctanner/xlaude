@@ -32,7 +32,7 @@ use shell_words::split as shell_split;
 use crate::claude;
 use crate::codex;
 use crate::codex::CodexSession;
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 use crate::utils::prepare_agent_command;
 
 const STATIC_INDEX: &str = include_str!("../dashboard/static/index.html");
@@ -95,7 +95,7 @@ async fn start_server(addr: SocketAddr, config: DashboardConfig, auto_open: bool
         .local_addr()
         .context("Failed to read listener address")?;
 
-    println!("🚀 xlaude dashboard available at http://{actual_addr} (press Ctrl+C to stop)");
+    println!("🚀 pigs dashboard available at http://{actual_addr} (press Ctrl+C to stop)");
 
     if auto_open {
         let url = format!("http://{actual_addr}");
@@ -289,7 +289,7 @@ async fn start_live_session(
     repo: &str,
     name: &str,
 ) -> Result<Arc<SessionRuntime>, (StatusCode, String)> {
-    let state = XlaudeState::load().map_err(|err| {
+    let state = PigsState::load().map_err(|err| {
         eprintln!("[dashboard] failed to load state: {err:?}");
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -297,7 +297,7 @@ async fn start_live_session(
         )
     })?;
 
-    let key = XlaudeState::make_key(repo, name);
+    let key = PigsState::make_key(repo, name);
     let info = state.worktrees.get(&key).cloned().ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
@@ -342,7 +342,7 @@ fn spawn_session_blocking(
     info: WorktreeInfo,
     handle: tokio::runtime::Handle,
 ) -> Result<Arc<SessionRuntime>> {
-    let worktree_key = XlaudeState::make_key(&info.repo_name, &info.name);
+    let worktree_key = PigsState::make_key(&info.repo_name, &info.name);
     let pty_system = native_pty_system();
     let pair = pty_system.openpty(PtySize {
         rows: PTY_ROWS,
@@ -458,7 +458,7 @@ async fn get_session_runtime(id: &str) -> Option<Arc<SessionRuntime>> {
 }
 
 fn build_dashboard_payload(limit: usize) -> Result<DashboardPayload> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
     let worktree_paths: Vec<PathBuf> = state
         .worktrees
         .values()
@@ -562,7 +562,7 @@ fn summarize_worktree(
 }
 
 fn load_settings_payload() -> Result<SettingsPayload> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
     Ok(SettingsPayload {
         editor: state.editor.clone(),
         terminal: state.shell.clone(),
@@ -570,7 +570,7 @@ fn load_settings_payload() -> Result<SettingsPayload> {
 }
 
 fn update_settings_state(req: SettingsPayload) -> Result<SettingsPayload> {
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
     state.editor = normalize_setting(req.editor);
     state.shell = normalize_setting(req.terminal);
     state.save()?;
@@ -925,7 +925,7 @@ fn handle_worktree_action(
     name: &str,
     action: &str,
 ) -> Result<ActionResponse, (StatusCode, String)> {
-    let state = XlaudeState::load().map_err(|err| {
+    let state = PigsState::load().map_err(|err| {
         eprintln!("[dashboard] failed to load state: {err:?}");
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -933,7 +933,7 @@ fn handle_worktree_action(
         )
     })?;
 
-    let key = XlaudeState::make_key(repo, name);
+    let key = PigsState::make_key(repo, name);
     let info = state.worktrees.get(&key).cloned().ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
@@ -964,7 +964,7 @@ fn handle_worktree_action(
 fn editor_command(override_cmd: Option<String>) -> String {
     override_cmd
         .filter(|s| !s.trim().is_empty())
-        .or_else(|| std::env::var("XLAUDE_DASHBOARD_EDITOR").ok())
+        .or_else(|| std::env::var("PIGS_DASHBOARD_EDITOR").ok())
         .or_else(|| std::env::var("EDITOR").ok())
         .unwrap_or_else(|| "code".to_string())
 }
@@ -972,7 +972,7 @@ fn editor_command(override_cmd: Option<String>) -> String {
 fn shell_command(override_cmd: Option<String>) -> String {
     override_cmd
         .filter(|s| !s.trim().is_empty())
-        .or_else(|| std::env::var("XLAUDE_DASHBOARD_SHELL").ok())
+        .or_else(|| std::env::var("PIGS_DASHBOARD_SHELL").ok())
         .or_else(|| std::env::var("SHELL").ok())
         .unwrap_or_else(|| "/bin/zsh".to_string())
 }
@@ -982,7 +982,7 @@ fn launch_agent(info: &WorktreeInfo) -> Result<(), (StatusCode, String)> {
         eprintln!("[dashboard] failed to locate binary: {err:?}");
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to locate xlaude binary".to_string(),
+            "Failed to locate pigs binary".to_string(),
         )
     })?;
 

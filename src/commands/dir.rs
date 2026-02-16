@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
 
 use crate::input::{get_command_arg, smart_select};
-use crate::state::{WorktreeInfo, XlaudeState};
+use crate::state::{WorktreeInfo, PigsState};
 
 pub fn handle_dir(name: Option<String>) -> Result<()> {
-    let state = XlaudeState::load()?;
+    let state = PigsState::load()?;
 
     if state.worktrees.is_empty() {
-        anyhow::bail!("No worktrees found. Create one first with 'xlaude create'");
+        anyhow::bail!("No worktrees found. Create one first with 'pigs create'");
     }
 
     // Get name from CLI args or pipe
@@ -43,7 +43,7 @@ pub fn handle_dir(name: Option<String>) -> Result<()> {
     };
 
     // Output only the path - no decorations, no colors
-    // This makes it easy to use in shell commands: cd $(xlaude dir name)
+    // This makes it easy to use in shell commands: cd $(pigs dir name)
     println!("{}", worktree_info.path.display());
 
     Ok(())

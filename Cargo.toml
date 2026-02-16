@@ -1,5 +1,5 @@
 [package]
-name = "xlaude"
+name = "pigs"
 version = "0.7.0"
 edition = "2024"
 description = "A CLI tool for managing Claude instances with git worktree"

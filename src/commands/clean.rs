@@ -4,11 +4,11 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 use crate::git::list_worktrees;
-use crate::state::XlaudeState;
+use crate::state::PigsState;
 use crate::utils::execute_in_dir;
 
 pub fn handle_clean() -> Result<()> {
-    let mut state = XlaudeState::load()?;
+    let mut state = PigsState::load()?;
 
     if state.worktrees.is_empty() {
         println!("{} No worktrees in state", "✨".green());
@@ -61,7 +61,7 @@ pub fn handle_clean() -> Result<()> {
     Ok(())
 }
 
-fn collect_all_worktrees(state: &XlaudeState) -> Result<HashSet<PathBuf>> {
+fn collect_all_worktrees(state: &PigsState) -> Result<HashSet<PathBuf>> {
     let mut all_worktrees = HashSet::new();
 
     // Get unique repository paths
