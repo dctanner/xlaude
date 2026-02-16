@@ -15,8 +15,8 @@ mod utils;
 
 use commands::{
     handle_add, handle_checkout, handle_clean, handle_complete_from, handle_complete_linear,
-    handle_config, handle_create, handle_dashboard, handle_delete, handle_dir, handle_list,
-    handle_open, handle_rename,
+    handle_config, handle_create, handle_dashboard, handle_delete, handle_dir, handle_linear,
+    handle_list, handle_open, handle_rename,
 };
 
 #[derive(Parser)]
@@ -29,6 +29,20 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Create a new git worktree from a Linear issue
+    Linear {
+        /// Linear issue identifier (e.g. ENG-123)
+        identifier: Option<String>,
+        /// Create from an existing worktree or branch instead of the current branch
+        #[arg(long)]
+        from: Option<String>,
+        /// Automatically confirm prompts
+        #[arg(short = 'y')]
+        yes: bool,
+        /// Extra arguments passed to the agent command
+        #[arg(last = true)]
+        agent_args: Vec<String>,
+    },
     /// Create a new git worktree
     Create {
         /// Name for the worktree (random BIP39 word if not provided)
@@ -131,6 +145,12 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Linear {
+            identifier,
+            from,
+            yes,
+            agent_args,
+        } => handle_linear(identifier, from, yes, agent_args),
         Commands::Create {
             name,
             from,

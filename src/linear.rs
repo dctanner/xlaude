@@ -93,6 +93,83 @@ struct IssueNode {
     title: String,
 }
 
+pub fn start_issue(identifier: &str) -> Result<()> {
+    let api_key = std::env::var("LINEAR_API_KEY")
+        .context("LINEAR_API_KEY environment variable is not set")?;
+
+    // First, fetch the issue's team and find the "started" workflow state
+    let query = format!(
+        r#"{{"query":"{{ issue(id: \"{}\") {{ id team {{ states {{ nodes {{ id type }} }} }} }} }}"}}"#,
+        identifier
+    );
+
+    let response: serde_json::Value = ureq::post(LINEAR_API_URL)
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .send(query.as_bytes())
+        .context("Failed to query issue team states")?
+        .body_mut()
+        .read_json()
+        .context("Failed to parse Linear API response")?;
+
+    let issue = &response["data"]["issue"];
+    if issue.is_null() {
+        anyhow::bail!("Issue '{}' not found in Linear", identifier);
+    }
+
+    let issue_id = issue["id"]
+        .as_str()
+        .context("Issue has no id")?;
+
+    let started_state_id = issue["team"]["states"]["nodes"]
+        .as_array()
+        .context("No workflow states found")?
+        .iter()
+        .find(|s| s["type"].as_str() == Some("started"))
+        .and_then(|s| s["id"].as_str())
+        .context("No 'started' workflow state found for this team")?;
+
+    // Get current viewer ID
+    let viewer_query = r#"{"query":"{ viewer { id } }"}"#;
+    let viewer_response: serde_json::Value = ureq::post(LINEAR_API_URL)
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .send(viewer_query.as_bytes())
+        .context("Failed to query viewer")?
+        .body_mut()
+        .read_json()
+        .context("Failed to parse viewer response")?;
+
+    let viewer_id = viewer_response["data"]["viewer"]["id"]
+        .as_str()
+        .context("Failed to get viewer ID")?;
+
+    // Mutate: set state to "started" and assign to viewer
+    let mutation = format!(
+        r#"{{"query":"mutation {{ issueUpdate(id: \"{}\", input: {{ stateId: \"{}\", assigneeId: \"{}\" }}) {{ success }} }}"}}"#,
+        issue_id, started_state_id, viewer_id
+    );
+
+    let mutate_response: serde_json::Value = ureq::post(LINEAR_API_URL)
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .send(mutation.as_bytes())
+        .context("Failed to update issue")?
+        .body_mut()
+        .read_json()
+        .context("Failed to parse mutation response")?;
+
+    let success = mutate_response["data"]["issueUpdate"]["success"]
+        .as_bool()
+        .unwrap_or(false);
+
+    if !success {
+        anyhow::bail!("Failed to update issue state in Linear");
+    }
+
+    Ok(())
+}
+
 pub fn fetch_my_issues() -> Result<Vec<LinearIssueSummary>> {
     let api_key = std::env::var("LINEAR_API_KEY")
         .context("LINEAR_API_KEY environment variable is not set")?;

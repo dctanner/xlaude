@@ -32,7 +32,7 @@ _pigs() {{
     fi
 
     # Main commands
-    local commands="create open delete add rename list clean dir completions"
+    local commands="linear create open delete add rename list clean dir completions"
 
     # Complete main commands
     if [[ $cword -eq 1 ]]; then
@@ -42,7 +42,7 @@ _pigs() {{
 
     # Complete subcommand arguments
     case "${{words[1]}}" in
-        create)
+        linear)
             if [[ "$prev" == "--from" ]]; then
                 local targets=$(pigs complete-from 2>/dev/null)
                 COMPREPLY=($(compgen -W "$targets" -- "$cur"))
@@ -51,6 +51,14 @@ _pigs() {{
             else
                 local linear_issues=$(pigs complete-linear 2>/dev/null | cut -f1)
                 COMPREPLY=($(compgen -W "$linear_issues" -- "$cur"))
+            fi
+            ;;
+        create)
+            if [[ "$prev" == "--from" ]]; then
+                local targets=$(pigs complete-from 2>/dev/null)
+                COMPREPLY=($(compgen -W "$targets" -- "$cur"))
+            elif [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "--from -y" -- "$cur"))
             fi
             ;;
         open|dir|delete)
@@ -87,6 +95,7 @@ fn print_zsh_completions() {
 _pigs() {{
     local -a commands
     commands=(
+        'linear:Create a new git worktree from a Linear issue'
         'create:Create a new git worktree'
         'open:Open an existing worktree and launch Claude'
         'delete:Delete a worktree and clean up'
@@ -118,14 +127,21 @@ _pigs() {{
                 _message "new name"
             fi
             ;;
+        linear)
+            local -a linear_opts
+            linear_opts=(
+                '--from[Create from an existing worktree or branch]:source:_pigs_from_targets'
+                '-y[Automatically confirm prompts]'
+            )
+            _arguments -s $linear_opts '1:Linear issue:_pigs_linear_issues'
+            ;;
         create)
-            # Support --from with worktree completion, and positional name
             local -a create_opts
             create_opts=(
                 '--from[Create from an existing worktree or branch]:source:_pigs_from_targets'
                 '-y[Automatically open the worktree after creation]'
             )
-            _arguments -s $create_opts '1:worktree name or Linear issue:_pigs_linear_issues'
+            _arguments -s $create_opts '1:worktree name:'
             ;;
         add)
             if (( CURRENT == 3 )); then
@@ -213,6 +229,7 @@ fn print_fish_completions() {
 complete -c pigs -f
 
 # Main commands
+complete -c pigs -n "__fish_use_subcommand" -a linear -d "Create a new git worktree from a Linear issue"
 complete -c pigs -n "__fish_use_subcommand" -a create -d "Create a new git worktree"
 complete -c pigs -n "__fish_use_subcommand" -a open -d "Open an existing worktree and launch Claude"
 complete -c pigs -n "__fish_use_subcommand" -a delete -d "Delete a worktree and clean up"
@@ -263,8 +280,9 @@ end
 
 complete -c pigs -n "__fish_seen_subcommand_from create" -l from -d "Create from an existing worktree or branch" -r -a "(__pigs_from_targets)"
 
-# Linear issue completions for create command
-complete -c pigs -n "__fish_seen_subcommand_from create; and not __fish_seen_argument_from -l from" -a "(__pigs_linear_issues)"
+# Linear command: --from flag and issue completions
+complete -c pigs -n "__fish_seen_subcommand_from linear" -l from -d "Create from an existing worktree or branch" -r -a "(__pigs_from_targets)"
+complete -c pigs -n "__fish_seen_subcommand_from linear; and not __fish_seen_argument_from -l from" -a "(__pigs_linear_issues)"
 
 # Shell completions for completions command
 complete -c pigs -n "__fish_seen_subcommand_from completions" -a "bash zsh fish"
